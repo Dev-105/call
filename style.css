@@ -1,0 +1,112 @@
+/* Custom styles to complement Tailwind */
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #374151;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4B5563;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #6B7280;
+}
+
+/* Video element styling */
+video {
+    object-fit: cover;
+    border-radius: 8px;
+    transform: scaleX(-1); /* Mirror for local video */
+}
+
+#remoteVideo {
+    transform: scaleX(1); /* Don't mirror remote video */
+}
+
+/* Animations */
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.4;
+    }
+    100% {
+        transform: scale(0.8);
+        opacity: 0.8;
+    }
+}
+
+.pulse-ring {
+    animation: pulse-ring 2s infinite;
+}
+
+/* Transition classes */
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #localVideo, #remoteVideo {
+        max-height: 40vh;
+    }
+    
+    .flex-col-mobile {
+        flex-direction: column;
+    }
+}
+
+/* Modal animations */
+.modal-enter {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Status indicator animations */
+.status-pulse {
+    animation: statusPulse 2s infinite;
+}
+
+@keyframes statusPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Button hover effects */
+.hover-lift {
+    transition: transform 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+/* Glow effect for active call */
+.glow {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+}
