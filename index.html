@@ -7,12 +7,87 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PeerJS CDN -->
-    <!-- <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script> -->
-    <script src="https://unpkg.com/peerjs@1.3.1/dist/peerjs.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
     <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📞</text></svg>">
+    <style>
+        /* Custom styles */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6B7280;
+        }
+
+        video {
+            object-fit: cover;
+            border-radius: 8px;
+            transform: scaleX(-1);
+        }
+
+        #remoteVideo {
+            transform: scaleX(1);
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            50% { transform: scale(1.2); opacity: 0.4; }
+            100% { transform: scale(0.8); opacity: 0.8; }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-enter {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .status-pulse {
+            animation: statusPulse 2s infinite;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-2px);
+        }
+
+        .glow {
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        /* ID display styling */
+        .id-display {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            letter-spacing: 1px;
+        }
+
+        .copy-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen">
     <!-- Login Screen -->
@@ -20,15 +95,16 @@
         <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-md">
             <div class="text-center mb-8">
                 <h1 class="text-4xl mb-2">📞 PeerCall</h1>
-                <p class="text-gray-400">Video & Voice Calls using Peer.js</p>
+                <p class="text-gray-400">Secure Peer-to-Peer Video Calls</p>
             </div>
             
             <div class="mb-6">
-                <label class="block text-gray-300 mb-2">Enter your email address</label>
-                <input type="email" id="emailInput" 
+                <label class="block text-gray-300 mb-4">Enter Your Name</label>
+                <input type="text" id="usernameInput" 
                     class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    placeholder="yourname@example.com">
-                <p class="text-sm text-gray-400 mt-2">This will be your unique Peer ID for calls</p>
+                    placeholder="Your Name"
+                    maxlength="20">
+                <p class="text-sm text-gray-400 mt-2">This will help others identify you</p>
             </div>
             
             <div class="flex justify-center">
@@ -40,9 +116,9 @@
             <div class="mt-8 p-4 bg-gray-900 rounded-lg">
                 <h3 class="text-lg font-semibold mb-2">How it works:</h3>
                 <ul class="text-sm text-gray-400 space-y-1">
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Enter your email as your ID</li>
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Share your email with friends</li>
-                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Enter their email to call them</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Get a random Peer ID</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Share your ID with friends</li>
+                    <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Enter friend's ID to call them</li>
                     <li><i class="fas fa-check-circle text-green-500 mr-2"></i>Accept/reject incoming calls</li>
                 </ul>
             </div>
@@ -52,18 +128,35 @@
     <!-- Main Call Screen (Initially Hidden) -->
     <div id="callScreen" class="hidden p-4 md:p-6">
         <!-- Header -->
-        <header class="flex justify-between items-center mb-6 bg-gray-800 p-4 rounded-xl">
+        <header class="flex justify-between items-center mb-6 bg-gray-800 p-4 rounded-xl flex-wrap gap-4">
             <div>
-                <h1 class="text-2xl font-bold">PeerCall</h1>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <span>PeerCall</span>
+                    <span class="text-xs bg-blue-600 px-2 py-1 rounded-full">P2P</span>
+                </h1>
                 <div id="connectionStatus" class="flex items-center mt-1">
                     <span class="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
                     <span class="text-sm text-gray-400">Disconnected</span>
                 </div>
             </div>
             
-            <div class="text-right">
-                <div class="text-lg font-medium" id="userEmailDisplay">Not logged in</div>
-                <div class="text-sm text-gray-400">Your Peer ID</div>
+            <div class="flex flex-col items-end gap-2">
+                <div class="flex items-center gap-3">
+                    <span id="userNameDisplay" class="text-lg font-medium">Guest</span>
+                    <span class="text-gray-400">•</span>
+                    <div class="flex items-center gap-2">
+                        <span id="peerIdDisplay" class="id-display text-sm bg-gray-700 px-3 py-1 rounded">Generating...</span>
+                        <button id="copyIdBtn" class="text-gray-400 hover:text-white transition copy-btn">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-400 flex items-center gap-2">
+                    <span>Your Peer ID</span>
+                    <button id="refreshIdBtn" class="text-xs text-blue-400 hover:text-blue-300 transition" title="Generate new ID">
+                        <i class="fas fa-redo-alt"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -74,8 +167,11 @@
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <!-- Local Video -->
                     <div class="bg-gray-800 rounded-xl overflow-hidden">
-                        <div class="bg-gray-900 p-3">
-                            <h3 class="font-semibold"><i class="fas fa-user mr-2"></i>You</h3>
+                        <div class="bg-gray-900 p-3 flex justify-between items-center">
+                            <h3 class="font-semibold"><i class="fas fa-user mr-2"></i><span id="localUserName">You</span></h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs px-2 py-1 bg-gray-700 rounded" id="localPeerIdShort">Local</span>
+                            </div>
                         </div>
                         <video id="localVideo" autoplay muted playsinline class="w-full aspect-video bg-gray-900"></video>
                         <div class="p-3 bg-gray-800">
@@ -86,19 +182,27 @@
                                 <button id="toggleAudio" class="bg-gray-700 hover:bg-gray-600 w-12 h-12 rounded-full flex items-center justify-center transition">
                                     <i class="fas fa-microphone text-xl"></i>
                                 </button>
+                                <button id="toggleFullscreen" class="bg-gray-700 hover:bg-gray-600 w-12 h-12 rounded-full flex items-center justify-center transition">
+                                    <i class="fas fa-expand text-xl"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Remote Video -->
                     <div class="bg-gray-800 rounded-xl overflow-hidden">
-                        <div class="bg-gray-900 p-3">
-                            <h3 class="font-semibold"><i class="fas fa-user-friends mr-2"></i>Friend</h3>
-                            <div id="remotePeerInfo" class="text-sm text-gray-400">Not connected</div>
+                        <div class="bg-gray-900 p-3 flex justify-between items-center">
+                            <h3 class="font-semibold"><i class="fas fa-user-friends mr-2"></i><span id="remoteUserName">Friend</span></h3>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs px-2 py-1 bg-blue-600 rounded" id="remotePeerIdShort">Remote</span>
+                            </div>
                         </div>
                         <video id="remoteVideo" autoplay playsinline class="w-full aspect-video bg-gray-900"></video>
                         <div class="p-3 bg-gray-800">
                             <div id="callTimer" class="text-center text-lg font-mono hidden">00:00</div>
+                            <div id="callQuality" class="text-center text-sm text-gray-400 hidden">
+                                <i class="fas fa-signal mr-1"></i><span>Good connection</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -107,16 +211,16 @@
                 <div class="mt-6 bg-gray-800 p-6 rounded-xl">
                     <h3 class="text-xl font-semibold mb-4">Call Controls</h3>
                     <div class="flex flex-wrap justify-center gap-4">
-                        <button id="voiceCallBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-medium transition duration-200">
+                        <button id="voiceCallBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-medium transition duration-200 hover-lift">
                             <i class="fas fa-phone mr-2"></i>Voice Call
                         </button>
-                        <button id="videoCallBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition duration-200">
+                        <button id="videoCallBtn" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-medium transition duration-200 hover-lift">
                             <i class="fas fa-video mr-2"></i>Video Call
                         </button>
-                        <button id="hangupBtn" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-medium transition duration-200 hidden">
+                        <button id="hangupBtn" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg font-medium transition duration-200 hover-lift hidden">
                             <i class="fas fa-phone-slash mr-2"></i>End Call
                         </button>
-                        <button id="logoutBtn" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-medium transition duration-200">
+                        <button id="logoutBtn" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-medium transition duration-200 hover-lift">
                             <i class="fas fa-sign-out-alt mr-2"></i>Logout
                         </button>
                     </div>
@@ -129,17 +233,24 @@
                     <h3 class="text-xl font-semibold mb-4">Make a Call</h3>
                     
                     <div class="mb-6">
-                        <label class="block text-gray-300 mb-2">Friend's Email</label>
-                        <input type="email" id="friendEmail" 
-                            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                            placeholder="friend@example.com">
+                        <label class="block text-gray-300 mb-2">Friend's Peer ID</label>
+                        <div class="relative">
+                            <input type="text" id="friendPeerId" 
+                                class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition id-display"
+                                placeholder="abc-123-xyz"
+                                spellcheck="false">
+                            <button id="pasteIdBtn" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition">
+                                <i class="fas fa-paste"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-2">Ask your friend to share their Peer ID</p>
                     </div>
 
                     <div class="space-y-4">
-                        <button id="callVoiceBtn" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-medium transition duration-200">
+                        <button id="callVoiceBtn" class="w-full bg-green-600 hover:bg-green-700 py-3 rounded-lg font-medium transition duration-200 hover-lift">
                             <i class="fas fa-phone mr-2"></i>Call (Voice Only)
                         </button>
-                        <button id="callVideoBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition duration-200">
+                        <button id="callVideoBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition duration-200 hover-lift">
                             <i class="fas fa-video mr-2"></i>Call (Video)
                         </button>
                     </div>
@@ -158,16 +269,63 @@
                                 <div id="camStatus" class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
                                 <span>Camera: <span id="camText">On</span></span>
                             </div>
+                            <div class="flex items-center">
+                                <div id="connectionQuality" class="w-3 h-3 rounded-full bg-green-500 mr-3"></div>
+                                <span>Connection: <span id="connectionQualityText">Good</span></span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Recent Calls (Simulated) -->
+                    <!-- Recent Calls -->
                     <div class="mt-8 pt-6 border-t border-gray-700">
-                        <h4 class="font-semibold mb-3">Recent Contacts</h4>
-                        <div id="recentContacts" class="space-y-2">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="font-semibold">Recent Calls</h4>
+                            <button id="clearRecentBtn" class="text-xs text-gray-400 hover:text-gray-300 transition">
+                                Clear All
+                            </button>
+                        </div>
+                        <div id="recentCalls" class="space-y-2 max-h-60 overflow-y-auto">
                             <!-- Will be populated from localStorage -->
+                            <p class="text-gray-400 text-sm text-center py-4">No recent calls</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ID Share Modal -->
+        <div id="shareIdModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+            <div class="bg-gray-800 p-8 rounded-xl max-w-md w-full mx-4">
+                <div class="text-center mb-6">
+                    <div class="text-6xl mb-4">🔗</div>
+                    <h2 class="text-2xl font-bold">Share Your Peer ID</h2>
+                    <p class="text-gray-400 mt-2">Share this ID with friends to receive calls</p>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex items-center justify-between p-4 bg-gray-900 rounded-lg mb-3">
+                        <div>
+                            <p class="text-sm text-gray-400">Your Peer ID:</p>
+                            <p id="shareIdValue" class="text-xl font-mono font-bold mt-1"></p>
+                        </div>
+                        <button id="copyShareIdBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition">
+                            <i class="fas fa-copy mr-2"></i>Copy
+                        </button>
+                    </div>
+                    
+                    <div class="p-4 bg-gray-900 rounded-lg">
+                        <p class="text-sm text-gray-400 mb-2">Your Name:</p>
+                        <p id="shareNameValue" class="text-lg"></p>
+                    </div>
+                </div>
+                
+                <div class="flex justify-center space-x-4">
+                    <button id="closeShareModalBtn" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-medium transition">
+                        Close
+                    </button>
+                    <button id="shareViaBtn" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-medium transition">
+                        <i class="fas fa-share-alt mr-2"></i>Share
+                    </button>
                 </div>
             </div>
         </div>
@@ -178,15 +336,16 @@
                 <div class="text-center mb-6">
                     <div class="text-6xl mb-4">📞</div>
                     <h2 class="text-2xl font-bold">Incoming Call</h2>
-                    <p id="callerEmail" class="text-gray-400 mt-2">someone@example.com</p>
-                    <p id="callType" class="text-blue-400 mt-1">Video Call</p>
+                    <p id="callerName" class="text-xl mt-2">Someone</p>
+                    <p id="callerPeerId" class="text-gray-400 text-sm mt-1"></p>
+                    <p id="incomingCallType" class="text-blue-400 mt-1">Video Call</p>
                 </div>
                 
                 <div class="flex justify-center space-x-4">
-                    <button id="acceptCallBtn" class="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-lg font-semibold text-lg transition">
+                    <button id="acceptCallBtn" class="bg-green-600 hover:bg-green-700 px-8 py-3 rounded-lg font-semibold text-lg transition hover-lift">
                         <i class="fas fa-phone mr-2"></i>Accept
                     </button>
-                    <button id="rejectCallBtn" class="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-lg font-semibold text-lg transition">
+                    <button id="rejectCallBtn" class="bg-red-600 hover:bg-red-700 px-8 py-3 rounded-lg font-semibold text-lg transition hover-lift">
                         <i class="fas fa-phone-slash mr-2"></i>Reject
                     </button>
                 </div>
@@ -204,17 +363,1030 @@
 
         <!-- Alert Modal -->
         <div id="alertModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
-            <div class="bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4">
+            <div class="bg-gray-800 p-6 rounded-xl max-w-md w-full mx-4 modal-enter">
                 <h3 id="alertTitle" class="text-xl font-bold mb-4"></h3>
                 <p id="alertMessage" class="text-gray-300 mb-6"></p>
-                <button id="alertOkBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium">
+                <button id="alertOkBtn" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded-lg font-medium transition">
                     OK
                 </button>
             </div>
         </div>
+
+        <!-- Connecting Modal -->
+        <div id="connectingModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+            <div class="bg-gray-800 p-8 rounded-xl max-w-sm w-full mx-4 text-center">
+                <div class="text-6xl mb-6">⏳</div>
+                <h3 class="text-xl font-bold mb-4">Connecting...</h3>
+                <p id="connectingMessage" class="text-gray-300 mb-6">Establishing connection</p>
+                <div class="flex justify-center">
+                    <div class="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="app.js"></script>
-</body>
+    <script>
+        // PeerCall - WebRTC Video Calling Application
+        // Using random Peer IDs instead of emails
 
+        // Global variables
+        let peer = null;
+        let currentCall = null;
+        let localStream = null;
+        let remoteStream = null;
+        let callStartTime = null;
+        let callTimerInterval = null;
+        let isAudioEnabled = true;
+        let isVideoEnabled = true;
+        let userName = 'Guest';
+        let peerId = null;
+        let isConnecting = false;
+
+        // DOM Elements
+        const loginScreen = document.getElementById('loginScreen');
+        const callScreen = document.getElementById('callScreen');
+        const usernameInput = document.getElementById('usernameInput');
+        const loginBtn = document.getElementById('loginBtn');
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const peerIdDisplay = document.getElementById('peerIdDisplay');
+        const copyIdBtn = document.getElementById('copyIdBtn');
+        const refreshIdBtn = document.getElementById('refreshIdBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const friendPeerId = document.getElementById('friendPeerId');
+        const pasteIdBtn = document.getElementById('pasteIdBtn');
+        const callVoiceBtn = document.getElementById('callVoiceBtn');
+        const callVideoBtn = document.getElementById('callVideoBtn');
+        const voiceCallBtn = document.getElementById('voiceCallBtn');
+        const videoCallBtn = document.getElementById('videoCallBtn');
+        const hangupBtn = document.getElementById('hangupBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const localVideo = document.getElementById('localVideo');
+        const remoteVideo = document.getElementById('remoteVideo');
+        const toggleVideo = document.getElementById('toggleVideo');
+        const toggleAudio = document.getElementById('toggleAudio');
+        const toggleFullscreen = document.getElementById('toggleFullscreen');
+        const micStatus = document.getElementById('micStatus');
+        const camStatus = document.getElementById('camStatus');
+        const micText = document.getElementById('micText');
+        const camText = document.getElementById('camText');
+        const callStatus = document.getElementById('callStatus');
+        const remoteUserName = document.getElementById('remoteUserName');
+        const remotePeerIdShort = document.getElementById('remotePeerIdShort');
+        const localPeerIdShort = document.getElementById('localPeerIdShort');
+        const localUserName = document.getElementById('localUserName');
+        const callTimer = document.getElementById('callTimer');
+        const callQuality = document.getElementById('callQuality');
+        const connectionQuality = document.getElementById('connectionQuality');
+        const connectionQualityText = document.getElementById('connectionQualityText');
+        const incomingCallModal = document.getElementById('incomingCallModal');
+        const callerName = document.getElementById('callerName');
+        const callerPeerId = document.getElementById('callerPeerId');
+        const incomingCallType = document.getElementById('incomingCallType');
+        const acceptCallBtn = document.getElementById('acceptCallBtn');
+        const rejectCallBtn = document.getElementById('rejectCallBtn');
+        const alertModal = document.getElementById('alertModal');
+        const alertTitle = document.getElementById('alertTitle');
+        const alertMessage = document.getElementById('alertMessage');
+        const alertOkBtn = document.getElementById('alertOkBtn');
+        const recentCalls = document.getElementById('recentCalls');
+        const clearRecentBtn = document.getElementById('clearRecentBtn');
+        const shareIdModal = document.getElementById('shareIdModal');
+        const shareIdValue = document.getElementById('shareIdValue');
+        const shareNameValue = document.getElementById('shareNameValue');
+        const copyShareIdBtn = document.getElementById('copyShareIdBtn');
+        const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+        const shareViaBtn = document.getElementById('shareViaBtn');
+        const connectingModal = document.getElementById('connectingModal');
+        const connectingMessage = document.getElementById('connectingMessage');
+
+        // Generate random Peer ID
+        function generatePeerId() {
+            const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+            const sections = 3;
+            const sectionLength = 4;
+            let id = '';
+            
+            for (let i = 0; i < sections; i++) {
+                for (let j = 0; j < sectionLength; j++) {
+                    id += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                if (i < sections - 1) id += '-';
+            }
+            
+            return id;
+        }
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', initApp);
+
+        function initApp() {
+            // Check if user is already logged in
+            const savedUser = localStorage.getItem('peerCallUser');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    userName = user.name || 'Guest';
+                    peerId = user.peerId || generatePeerId();
+                    initializePeer();
+                    showCallScreen();
+                } catch (e) {
+                    // If there's an error, start fresh
+                    localStorage.removeItem('peerCallUser');
+                    loginScreen.classList.remove('hidden');
+                }
+            } else {
+                loginScreen.classList.remove('hidden');
+            }
+
+            // Event Listeners
+            loginBtn.addEventListener('click', handleLogin);
+            usernameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleLogin();
+            });
+            
+            copyIdBtn.addEventListener('click', copyPeerId);
+            refreshIdBtn.addEventListener('click', refreshPeerId);
+            pasteIdBtn.addEventListener('click', pastePeerId);
+            
+            callVoiceBtn.addEventListener('click', () => initiateCall('audio'));
+            callVideoBtn.addEventListener('click', () => initiateCall('video'));
+            voiceCallBtn.addEventListener('click', () => initiateCall('audio'));
+            videoCallBtn.addEventListener('click', () => initiateCall('video'));
+            hangupBtn.addEventListener('click', endCall);
+            logoutBtn.addEventListener('click', handleLogout);
+            toggleVideo.addEventListener('click', toggleCamera);
+            toggleAudio.addEventListener('click', toggleMicrophone);
+            toggleFullscreen.addEventListener('click', toggleFullScreen);
+            acceptCallBtn.addEventListener('click', acceptIncomingCall);
+            rejectCallBtn.addEventListener('click', rejectIncomingCall);
+            alertOkBtn.addEventListener('click', () => {
+                alertModal.classList.add('hidden');
+                if (isConnecting) {
+                    connectingModal.classList.add('hidden');
+                    isConnecting = false;
+                }
+            });
+            clearRecentBtn.addEventListener('click', clearRecentCalls);
+            copyShareIdBtn.addEventListener('click', copyShareId);
+            closeShareModalBtn.addEventListener('click', () => shareIdModal.classList.add('hidden'));
+            shareViaBtn.addEventListener('click', shareVia);
+            
+            friendPeerId.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') initiateCall('video');
+            });
+            
+            // Load recent calls
+            loadRecentCalls();
+        }
+
+        // Handle user login
+        function handleLogin() {
+            const name = usernameInput.value.trim();
+            
+            if (!name) {
+                showAlert('Name Required', 'Please enter your name');
+                return;
+            }
+            
+            if (name.length > 20) {
+                showAlert('Name Too Long', 'Name should be less than 20 characters');
+                return;
+            }
+            
+            userName = name;
+            peerId = generatePeerId();
+            
+            // Save user to localStorage
+            const userData = {
+                name: userName,
+                peerId: peerId,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('peerCallUser', JSON.stringify(userData));
+            
+            // Initialize Peer.js
+            initializePeer();
+            
+            // Show call screen
+            showCallScreen();
+        }
+
+        // Initialize Peer.js connection
+        function initializePeer() {
+            try {
+                // Create new Peer instance with random ID
+                peer = new Peer(peerId, {
+                    host: '0.peerjs.com',
+                    port: 443,
+                    path: '/',
+                    secure: true,
+                    debug: 2
+                });
+                
+                // Peer connection opened
+                peer.on('open', (id) => {
+                    console.log('Peer connected with ID:', id);
+                    updateConnectionStatus('connected', 'Connected to Peer Server');
+                    updatePeerIdDisplay(id);
+                    updateCallStatus('Ready to make calls');
+                    
+                    // Initialize local media
+                    initializeLocalMedia();
+                });
+                
+                // Incoming call
+                peer.on('call', (call) => {
+                    console.log('Incoming call from:', call.peer);
+                    handleIncomingCall(call);
+                });
+                
+                // Handle errors
+                peer.on('error', (err) => {
+                    console.error('Peer error:', err);
+                    
+                    let errorMessage = 'Connection error';
+                    if (err.type === 'unavailable-id') {
+                        errorMessage = 'Peer ID already in use. Generating new ID...';
+                        setTimeout(() => {
+                            refreshPeerId();
+                        }, 2000);
+                    } else if (err.type === 'network') {
+                        errorMessage = 'Network error. Please check your connection.';
+                    } else if (err.type === 'peer-unavailable') {
+                        errorMessage = 'The peer you\'re trying to reach is unavailable.';
+                    } else if (err.type === 'disconnected') {
+                        errorMessage = 'Disconnected from server. Reconnecting...';
+                        setTimeout(() => {
+                            if (peer && peer.disconnected) {
+                                peer.reconnect();
+                            }
+                        }, 3000);
+                    }
+                    
+                    updateConnectionStatus('error', errorMessage);
+                    
+                    if (err.type !== 'disconnected') {
+                        showAlert('Connection Error', errorMessage);
+                    }
+                });
+                
+                // Handle connection to peer server
+                peer.on('disconnected', () => {
+                    console.log('Peer disconnected');
+                    updateConnectionStatus('disconnected', 'Disconnected from server');
+                    
+                    // Try to reconnect after delay
+                    setTimeout(() => {
+                        if (peer && !peer.destroyed) {
+                            peer.reconnect();
+                        }
+                    }, 5000);
+                });
+                
+                // Handle connection closed
+                peer.on('close', () => {
+                    console.log('Peer connection closed');
+                    updateConnectionStatus('disconnected', 'Connection closed');
+                });
+                
+            } catch (error) {
+                console.error('Failed to initialize Peer:', error);
+                showAlert('Initialization Error', 'Failed to initialize Peer.js. Please refresh the page.');
+            }
+        }
+
+        // Initialize local camera and microphone
+        async function initializeLocalMedia() {
+            try {
+                // Request audio and video permissions
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    },
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                // Set local video stream
+                localVideo.srcObject = localStream;
+                
+                updateMediaStatus();
+                console.log('Local media initialized');
+                
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                
+                let errorMessage = 'Could not access camera/microphone. ';
+                if (error.name === 'NotAllowedError') {
+                    errorMessage += 'Please allow camera and microphone permissions.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage += 'No camera/microphone found.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage += 'Camera/microphone is already in use.';
+                }
+                
+                showAlert('Media Error', errorMessage);
+                
+                // Create a placeholder stream for audio-only calls
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({
+                        audio: true,
+                        video: false
+                    });
+                    updateMediaStatus();
+                } catch (audioError) {
+                    console.error('Could not get audio either:', audioError);
+                }
+            }
+        }
+
+        // Show call screen after login
+        function showCallScreen() {
+            loginScreen.classList.add('hidden');
+            callScreen.classList.remove('hidden');
+            userNameDisplay.textContent = userName;
+            localUserName.textContent = userName;
+            updatePeerIdDisplay(peerId);
+            
+            // Show share ID modal on first visit
+            const hasSeenShareModal = localStorage.getItem('peerCallSeenShareModal');
+            if (!hasSeenShareModal) {
+                setTimeout(() => {
+                    showShareIdModal();
+                    localStorage.setItem('peerCallSeenShareModal', 'true');
+                }, 1000);
+            }
+        }
+
+        // Update connection status display
+        function updateConnectionStatus(status, message = '') {
+            const statusDot = connectionStatus.querySelector('.w-3');
+            const statusText = connectionStatus.querySelector('span:nth-child(2)');
+            
+            switch (status) {
+                case 'connected':
+                    statusDot.className = 'w-3 h-3 rounded-full bg-green-500 mr-2';
+                    statusText.textContent = 'Connected' + (message ? `: ${message}` : '');
+                    break;
+                case 'connecting':
+                    statusDot.className = 'w-3 h-3 rounded-full bg-yellow-500 mr-2 animate-pulse';
+                    statusText.textContent = 'Connecting...';
+                    break;
+                case 'disconnected':
+                    statusDot.className = 'w-3 h-3 rounded-full bg-red-500 mr-2';
+                    statusText.textContent = 'Disconnected' + (message ? `: ${message}` : '');
+                    break;
+                case 'error':
+                    statusDot.className = 'w-3 h-3 rounded-full bg-red-500 mr-2';
+                    statusText.textContent = 'Error' + (message ? `: ${message}` : '');
+                    break;
+                case 'in-call':
+                    statusDot.className = 'w-3 h-3 rounded-full bg-blue-500 mr-2 status-pulse';
+                    statusText.textContent = 'In Call' + (message ? `: ${message}` : '');
+                    break;
+            }
+        }
+
+        // Update call status display
+        function updateCallStatus(message, isError = false) {
+            callStatus.textContent = message;
+            callStatus.className = isError ? 'text-red-400' : 'text-gray-400';
+        }
+
+        // Update peer ID display
+        function updatePeerIdDisplay(id) {
+            peerIdDisplay.textContent = id;
+            localPeerIdShort.textContent = id.substring(0, 8) + '...';
+        }
+
+        // Copy peer ID to clipboard
+        function copyPeerId() {
+            navigator.clipboard.writeText(peerId).then(() => {
+                showAlert('Copied!', 'Peer ID copied to clipboard');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showAlert('Copy Failed', 'Could not copy to clipboard');
+            });
+        }
+
+        // Refresh peer ID
+        function refreshPeerId() {
+            if (currentCall) {
+                showAlert('Cannot Change ID', 'Please end the current call first');
+                return;
+            }
+            
+            if (confirm('Generate a new Peer ID? Your current ID will no longer work.')) {
+                const oldId = peerId;
+                peerId = generatePeerId();
+                
+                // Destroy old peer
+                if (peer) {
+                    peer.destroy();
+                }
+                
+                // Save new ID
+                const userData = {
+                    name: userName,
+                    peerId: peerId,
+                    timestamp: Date.now()
+                };
+                localStorage.setItem('peerCallUser', JSON.stringify(userData));
+                
+                // Initialize with new ID
+                initializePeer();
+                showAlert('New ID Generated', 'Your new Peer ID is ready to share');
+            }
+        }
+
+        // Paste peer ID from clipboard
+        async function pastePeerId() {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (text) {
+                    friendPeerId.value = text.trim();
+                    friendPeerId.focus();
+                }
+            } catch (err) {
+                console.error('Failed to paste:', err);
+                showAlert('Paste Failed', 'Could not paste from clipboard');
+            }
+        }
+
+        // Initiate a call to a friend
+        async function initiateCall(callType) {
+            const friendId = friendPeerId.value.trim();
+            
+            if (!friendId) {
+                showAlert('Peer ID Required', 'Please enter your friend\'s Peer ID');
+                return;
+            }
+            
+            if (friendId === peerId) {
+                showAlert('Cannot Call Yourself', 'You cannot call yourself. Enter a different Peer ID.');
+                return;
+            }
+            
+            if (!localStream) {
+                await initializeLocalMedia();
+            }
+            
+            if (!localStream) {
+                showAlert('Media Required', 'Camera/microphone access is required to make calls');
+                return;
+            }
+            
+            // Update UI
+            isConnecting = true;
+            connectingMessage.textContent = `Calling ${friendId}...`;
+            connectingModal.classList.remove('hidden');
+            updateCallStatus(`Calling ${friendId}...`);
+            updateConnectionStatus('connecting', `Calling ${friendId}`);
+            
+            try {
+                // Determine media constraints based on call type
+                const streamToSend = callType === 'video' 
+                    ? localStream
+                    : new MediaStream(localStream.getAudioTracks());
+                
+                // Create the call
+                currentCall = peer.call(friendId, streamToSend, {
+                    metadata: {
+                        type: callType,
+                        caller: peerId,
+                        callerName: userName
+                    }
+                });
+                
+                if (!currentCall) {
+                    throw new Error('Failed to create call');
+                }
+                
+                // Handle call events
+                setupCallEventHandlers(currentCall);
+                
+                // Show hangup button
+                hangupBtn.classList.remove('hidden');
+                
+                // Save to recent calls
+                addToRecentCalls(friendId, 'outgoing', callType);
+                
+            } catch (error) {
+                console.error('Error initiating call:', error);
+                isConnecting = false;
+                connectingModal.classList.add('hidden');
+                updateCallStatus('Failed to initiate call', true);
+                showAlert('Call Failed', `Could not call ${friendId}. They might be offline or have an invalid Peer ID.`);
+            }
+        }
+
+        // Set up event handlers for a call
+        function setupCallEventHandlers(call) {
+            call.on('stream', (remoteStream) => {
+                console.log('Received remote stream');
+                isConnecting = false;
+                connectingModal.classList.add('hidden');
+                handleRemoteStream(remoteStream);
+                
+                // Update UI for active call
+                remotePeerIdShort.textContent = call.peer.substring(0, 8) + '...';
+                updateCallStatus('Call connected');
+                updateConnectionStatus('in-call', `Connected to ${call.peer}`);
+                
+                // Start call timer
+                startCallTimer();
+            });
+            
+            call.on('close', () => {
+                console.log('Call closed');
+                isConnecting = false;
+                connectingModal.classList.add('hidden');
+                endCall();
+            });
+            
+            call.on('error', (err) => {
+                console.error('Call error:', err);
+                isConnecting = false;
+                connectingModal.classList.add('hidden');
+                updateCallStatus('Call error occurred', true);
+                endCall();
+                showAlert('Call Error', 'The call encountered an error and was disconnected.');
+            });
+        }
+
+        // Handle incoming call
+        function handleIncomingCall(call) {
+            // Show incoming call modal
+            const metadata = call.metadata || {};
+            callerName.textContent = metadata.callerName || 'Someone';
+            callerPeerId.textContent = metadata.caller || call.peer;
+            incomingCallType.textContent = metadata.type === 'video' ? 'Video Call' : 'Voice Call';
+            
+            incomingCallModal.classList.remove('hidden');
+            
+            // Store the call for later use
+            currentCall = call;
+            
+            // Set up event handlers for accept/reject
+            acceptCallBtn.onclick = () => acceptIncomingCall(call);
+            rejectCallBtn.onclick = () => rejectIncomingCall(call);
+            
+            // Auto-reject after 45 seconds
+            setTimeout(() => {
+                if (!incomingCallModal.classList.contains('hidden')) {
+                    rejectIncomingCall(call);
+                    showAlert('Call Missed', `Missed call from ${metadata.callerName || call.peer}`);
+                    addToRecentCalls(call.peer, 'missed', metadata.type);
+                }
+            }, 45000);
+        }
+
+        // Accept incoming call
+        async function acceptIncomingCall(call) {
+            if (!localStream) {
+                await initializeLocalMedia();
+            }
+            
+            if (!localStream) {
+                showAlert('Media Required', 'Camera/microphone access is required to accept calls');
+                incomingCallModal.classList.add('hidden');
+                return;
+            }
+            
+            incomingCallModal.classList.add('hidden');
+            updateCallStatus(`Connecting to ${call.peer}...`);
+            
+            try {
+                // Determine which stream to send based on call type
+                const metadata = call.metadata || {};
+                const streamToSend = metadata.type === 'video' 
+                    ? localStream
+                    : new MediaStream(localStream.getAudioTracks());
+                
+                // Answer the call with appropriate stream
+                call.answer(streamToSend);
+                
+                // Set up call event handlers
+                setupCallEventHandlers(call);
+                
+                // Show hangup button
+                hangupBtn.classList.remove('hidden');
+                
+                // Update remote user info
+                remoteUserName.textContent = metadata.callerName || 'Friend';
+                
+                // Add to recent calls
+                addToRecentCalls(call.peer, 'incoming', metadata.type);
+                
+            } catch (error) {
+                console.error('Error answering call:', error);
+                updateCallStatus('Failed to answer call', true);
+                showAlert('Call Failed', 'Could not answer the call');
+            }
+        }
+
+        // Reject incoming call
+        function rejectIncomingCall(call) {
+            incomingCallModal.classList.add('hidden');
+            
+            if (call) {
+                call.close();
+            }
+            
+            updateCallStatus('Call rejected');
+            currentCall = null;
+        }
+
+        // Handle remote stream
+        function handleRemoteStream(stream) {
+            remoteStream = stream;
+            remoteVideo.srcObject = stream;
+            
+            // Play the remote video
+            remoteVideo.play().catch(e => console.error('Error playing remote video:', e));
+            
+            // Monitor connection quality
+            monitorConnectionQuality();
+        }
+
+        // Monitor connection quality
+        function monitorConnectionQuality() {
+            // This is a simplified implementation
+            // In a real app, you would use WebRTC stats API
+            
+            let quality = 'Good';
+            let qualityClass = 'bg-green-500';
+            
+            if (currentCall) {
+                // Simulate quality changes
+                setInterval(() => {
+                    // Random quality for demo
+                    const qualities = [
+                        { level: 'Excellent', color: 'bg-green-500' },
+                        { level: 'Good', color: 'bg-green-500' },
+                        { level: 'Fair', color: 'bg-yellow-500' },
+                        { level: 'Poor', color: 'bg-red-500' }
+                    ];
+                    const randomQuality = qualities[Math.floor(Math.random() * qualities.length)];
+                    
+                    connectionQuality.className = `w-3 h-3 rounded-full mr-3 ${randomQuality.color}`;
+                    connectionQualityText.textContent = randomQuality.level;
+                    
+                    // Update call quality indicator
+                    callQuality.classList.remove('hidden');
+                    callQuality.innerHTML = `<i class="fas fa-signal mr-1"></i><span>${randomQuality.level} connection</span>`;
+                    
+                }, 10000);
+            }
+        }
+
+        // End current call
+        function endCall() {
+            // Stop call timer
+            stopCallTimer();
+            
+            // Close the call if it exists
+            if (currentCall) {
+                currentCall.close();
+                currentCall = null;
+            }
+            
+            // Clear remote video
+            if (remoteVideo.srcObject) {
+                remoteVideo.srcObject.getTracks().forEach(track => track.stop());
+                remoteVideo.srcObject = null;
+            }
+            
+            // Reset remote stream
+            remoteStream = null;
+            
+            // Update UI
+            remoteUserName.textContent = 'Friend';
+            remotePeerIdShort.textContent = 'Remote';
+            updateCallStatus('Call ended');
+            updateConnectionStatus('connected', 'Ready for calls');
+            hangupBtn.classList.add('hidden');
+            callTimer.classList.add('hidden');
+            callQuality.classList.add('hidden');
+            
+            // Reset call status after a delay
+            setTimeout(() => {
+                if (!currentCall) {
+                    updateCallStatus('Ready to make calls');
+                }
+            }, 3000);
+        }
+
+        // Toggle camera on/off
+        function toggleCamera() {
+            if (!localStream) return;
+            
+            const videoTrack = localStream.getVideoTracks()[0];
+            if (videoTrack) {
+                isVideoEnabled = !videoTrack.enabled;
+                videoTrack.enabled = isVideoEnabled;
+                
+                // Update UI
+                const icon = toggleVideo.querySelector('i');
+                if (isVideoEnabled) {
+                    icon.className = 'fas fa-video text-xl';
+                    toggleVideo.classList.remove('bg-red-700');
+                    toggleVideo.classList.add('bg-gray-700');
+                } else {
+                    icon.className = 'fas fa-video-slash text-xl';
+                    toggleVideo.classList.remove('bg-gray-700');
+                    toggleVideo.classList.add('bg-red-700');
+                }
+                
+                updateMediaStatus();
+                
+                // Update current call if active
+                if (currentCall) {
+                    // Note: In a real implementation, you'd need to renegotiate the call
+                    // or use replaceTrack method
+                }
+            }
+        }
+
+        // Toggle microphone on/off
+        function toggleMicrophone() {
+            if (!localStream) return;
+            
+            const audioTrack = localStream.getAudioTracks()[0];
+            if (audioTrack) {
+                isAudioEnabled = !audioTrack.enabled;
+                audioTrack.enabled = isAudioEnabled;
+                
+                // Update UI
+                const icon = toggleAudio.querySelector('i');
+                if (isAudioEnabled) {
+                    icon.className = 'fas fa-microphone text-xl';
+                    toggleAudio.classList.remove('bg-red-700');
+                    toggleAudio.classList.add('bg-gray-700');
+                } else {
+                    icon.className = 'fas fa-microphone-slash text-xl';
+                    toggleAudio.classList.remove('bg-gray-700');
+                    toggleAudio.classList.add('bg-red-700');
+                }
+                
+                updateMediaStatus();
+            }
+        }
+
+        // Toggle fullscreen
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                if (remoteVideo.requestFullscreen) {
+                    remoteVideo.requestFullscreen();
+                } else if (remoteVideo.webkitRequestFullscreen) {
+                    remoteVideo.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+            }
+        }
+
+        // Update media status indicators
+        function updateMediaStatus() {
+            if (!localStream) return;
+            
+            const audioTrack = localStream.getAudioTracks()[0];
+            const videoTrack = localStream.getVideoTracks()[0];
+            
+            isAudioEnabled = audioTrack ? audioTrack.enabled : false;
+            isVideoEnabled = videoTrack ? videoTrack.enabled : false;
+            
+            // Update status indicators
+            micStatus.className = `w-3 h-3 rounded-full mr-3 ${isAudioEnabled ? 'bg-green-500' : 'bg-red-500'}`;
+            camStatus.className = `w-3 h-3 rounded-full mr-3 ${isVideoEnabled ? 'bg-green-500' : 'bg-red-500'}`;
+            
+            micText.textContent = isAudioEnabled ? 'On' : 'Off';
+            camText.textContent = isVideoEnabled ? 'On' : 'Off';
+        }
+
+        // Start call timer
+        function startCallTimer() {
+            callStartTime = new Date();
+            callTimer.classList.remove('hidden');
+            
+            callTimerInterval = setInterval(() => {
+                const now = new Date();
+                const diff = Math.floor((now - callStartTime) / 1000);
+                
+                const hours = Math.floor(diff / 3600);
+                const minutes = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+                const seconds = (diff % 60).toString().padStart(2, '0');
+                
+                if (hours > 0) {
+                    callTimer.textContent = `${hours}:${minutes}:${seconds}`;
+                } else {
+                    callTimer.textContent = `${minutes}:${seconds}`;
+                }
+            }, 1000);
+        }
+
+        // Stop call timer
+        function stopCallTimer() {
+            if (callTimerInterval) {
+                clearInterval(callTimerInterval);
+                callTimerInterval = null;
+            }
+            callStartTime = null;
+        }
+
+        // Show alert modal
+        function showAlert(title, message) {
+            alertTitle.textContent = title;
+            alertMessage.textContent = message;
+            alertModal.classList.remove('hidden');
+        }
+
+        // Show share ID modal
+        function showShareIdModal() {
+            shareIdValue.textContent = peerId;
+            shareNameValue.textContent = userName;
+            shareIdModal.classList.remove('hidden');
+        }
+
+        // Copy share ID
+        function copyShareId() {
+            const text = `Hey! Let's connect on PeerCall.\n\nMy Name: ${userName}\nMy Peer ID: ${peerId}\n\nTo call me, enter my Peer ID in the app.`;
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Copied!', 'Share message copied to clipboard');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                showAlert('Copy Failed', 'Could not copy to clipboard');
+            });
+        }
+
+        // Share via Web Share API or clipboard
+        function shareVia() {
+            const text = `Hey! Let's connect on PeerCall.\n\nMy Name: ${userName}\nMy Peer ID: ${peerId}\n\nTo call me, enter my Peer ID in the app.`;
+            
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Connect with me on PeerCall',
+                    text: text,
+                    url: window.location.href
+                }).catch(err => {
+                    console.log('Share cancelled or failed:', err);
+                    copyShareId();
+                });
+            } else {
+                copyShareId();
+            }
+        }
+
+        // Handle logout
+        function handleLogout() {
+            if (currentCall) {
+                if (!confirm('You have an active call. End call and logout?')) {
+                    return;
+                }
+                endCall();
+            }
+            
+            // Close peer connection
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+            
+            // Stop local media
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+            
+            // Clear localStorage
+            localStorage.removeItem('peerCallUser');
+            localStorage.removeItem('peerCallSeenShareModal');
+            
+            // Reset UI
+            callScreen.classList.add('hidden');
+            loginScreen.classList.remove('hidden');
+            usernameInput.value = '';
+            usernameInput.focus();
+            
+            // Reset variables
+            userName = 'Guest';
+            peerId = null;
+        }
+
+        // Add call to recent calls
+        function addToRecentCalls(peerId, type, callType) {
+            let calls = JSON.parse(localStorage.getItem('peerCallRecentCalls') || '[]');
+            
+            const call = {
+                peerId: peerId,
+                type: type, // 'incoming', 'outgoing', 'missed'
+                callType: callType, // 'audio', 'video'
+                timestamp: Date.now(),
+                date: new Date().toISOString()
+            };
+            
+            // Add to beginning
+            calls.unshift(call);
+            
+            // Keep only last 10 calls
+            calls = calls.slice(0, 10);
+            
+            // Save to localStorage
+            localStorage.setItem('peerCallRecentCalls', JSON.stringify(calls));
+            
+            // Update UI
+            loadRecentCalls();
+        }
+
+        // Load recent calls from localStorage
+        function loadRecentCalls() {
+            const calls = JSON.parse(localStorage.getItem('peerCallRecentCalls') || '[]');
+            
+            if (calls.length === 0) {
+                recentCalls.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">No recent calls</p>';
+                return;
+            }
+            
+            let html = '';
+            calls.forEach((call, index) => {
+                const time = new Date(call.timestamp);
+                const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                let icon = 'fa-phone';
+                let color = 'text-gray-400';
+                let status = '';
+                
+                if (call.type === 'incoming') {
+                    icon = 'fa-phone-alt';
+                    color = 'text-green-500';
+                    status = 'Incoming';
+                } else if (call.type === 'outgoing') {
+                    icon = 'fa-phone';
+                    color = 'text-blue-500';
+                    status = 'Outgoing';
+                } else if (call.type === 'missed') {
+                    icon = 'fa-phone-slash';
+                    color = 'text-red-500';
+                    status = 'Missed';
+                }
+                
+                html += `
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg hover:bg-gray-600 transition cursor-pointer" 
+                         onclick="document.getElementById('friendPeerId').value = '${call.peerId}'; document.getElementById('friendPeerId').focus()">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center ${color} bg-gray-800">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium">${call.peerId.substring(0, 12)}...</p>
+                                <div class="flex items-center gap-2 text-xs text-gray-400">
+                                    <span>${status}</span>
+                                    <span>•</span>
+                                    <span>${call.callType === 'video' ? 'Video' : 'Voice'}</span>
+                                    <span>•</span>
+                                    <span>${timeStr}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="text-gray-400 hover:text-white transition" onclick="event.stopPropagation(); callRecent('${call.peerId}', '${call.callType}')">
+                            <i class="fas fa-phone"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            recentCalls.innerHTML = html;
+        }
+
+        // Call recent contact
+        function callRecent(peerId, callType) {
+            friendPeerId.value = peerId;
+            if (callType === 'audio') {
+                initiateCall('audio');
+            } else {
+                initiateCall('video');
+            }
+        }
+
+        // Clear recent calls
+        function clearRecentCalls() {
+            if (confirm('Clear all recent calls?')) {
+                localStorage.removeItem('peerCallRecentCalls');
+                loadRecentCalls();
+            }
+        }
+
+        // Expose callRecent function to onclick handlers
+        window.callRecent = callRecent;
+    </script>
+</body>
 </html>
